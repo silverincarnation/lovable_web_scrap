@@ -31,19 +31,18 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install dependencies
+        shell: bash
         run: python -m pip install -r requirements.txt
 
-      - name: Scrape and clean
+      - name: Scrape
+        shell: bash
         env:
           TICKETMASTER_API_KEY: ${{ secrets.TICKETMASTER_API_KEY }}
           NYC_EVENTS_API_KEY: ${{ secrets.NYC_EVENTS_API_KEY }}
-        run: |
-          python run_scrape.py \
-            --dates ${{ inputs.dates }} \
-            --cities ${{ inputs.cities || 'New_York_US Mexico_City_MX' }} \
-            ${{ inputs.sites && format('--sites {0}', inputs.sites) || '' }}
+        run: python run_scrape.py --dates ${{ inputs.dates }} --cities ${{ inputs.cities || 'New_York_US Mexico_City_MX' }} ${{ inputs.sites && format('--sites {0}', inputs.sites) || '' }}
 
       - name: Commit results
+        shell: bash
         run: |
           git config user.name "scrape-bot"
           git config user.email "scrape-bot@users.noreply.github.com"
