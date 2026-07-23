@@ -3,16 +3,28 @@ name: Scrape events
 on:
   workflow_dispatch:
     inputs:
-      dates:
-        description: "Dates: YYYY-MM-DD / today / today+N (space-separated; empty = today)"
+      city:
+        description: "City (free text, e.g. New York, Guadalajara)"
+        required: false
+        default: "New York"
+      country:
+        description: "Country code (e.g. US, MX, CA)"
+        required: false
+        default: "US"
+      start_date:
+        description: "Start date: YYYY-MM-DD, today, or today+N"
+        required: false
+        default: "today"
+      end_date:
+        description: "End date (blank = single day; a range does a batch pull)"
         required: false
         default: ""
-      cities:
-        description: "City folders (space-separated)"
+      tz:
+        description: "Timezone (blank = default for country; e.g. America/Los_Angeles)"
         required: false
-        default: "New_York_US Mexico_City_MX"
+        default: ""
       sites:
-        description: "Sources subset (empty = ALL scrapers found in Scrap/)"
+        description: "Sources subset (blank = all scrapers in Scrap/)"
         required: false
         default: ""
 
@@ -26,7 +38,7 @@ concurrency:
 jobs:
   scrape:
     runs-on: self-hosted
-    timeout-minutes: 60
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
 
@@ -39,7 +51,7 @@ jobs:
         env:
           TICKETMASTER_API_KEY: ${{ secrets.TICKETMASTER_API_KEY }}
           NYC_EVENTS_API_KEY: ${{ secrets.NYC_EVENTS_API_KEY }}
-        run: python run_scrape.py --dates ${{ inputs.dates }} --cities ${{ inputs.cities || 'New_York_US Mexico_City_MX' }} ${{ inputs.sites && format('--sites {0}', inputs.sites) || '' }}
+        run: python run_scrape.py --city "${{ inputs.city }}" --country "${{ inputs.country }}" --start "${{ inputs.start_date }}" --end "${{ inputs.end_date }}" --tz "${{ inputs.tz }}" ${{ inputs.sites && format('--sites {0}', inputs.sites) || '' }}
 
       - name: Commit results
         shell: powershell
@@ -49,5 +61,5 @@ jobs:
           git add result
           $changed = git status --porcelain
           if (-not $changed) { Write-Host "no new data"; exit 0 }
-          git commit -m "scrape: $(Get-Date -Format 'yyyy-MM-dd HH:mm') UTC"
+          git commit -m "scrape: $(Get-Date -Format 'yyyy-MM-dd HH:mm')"
           git push
