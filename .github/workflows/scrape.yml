@@ -1,7 +1,7 @@
 name: Scrape events
 
 on:
-  workflow_dispatch:             # manual "Run workflow" button only (no schedule)
+  workflow_dispatch:
     inputs:
       dates:
         description: "Dates: YYYY-MM-DD / today / today+N (space-separated; empty = today)"
@@ -17,36 +17,37 @@ on:
         default: ""
 
 permissions:
-  contents: write                # allow the job to push the results back
+  contents: write
 
 concurrency:
-  group: scrape                  # never two scrapes at once
+  group: scrape
   cancel-in-progress: false
 
 jobs:
   scrape:
-    runs-on: self-hosted        # runs on YOUR computer (residential IP)
+    runs-on: self-hosted
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
 
       - name: Install dependencies
-        shell: bash
+        shell: powershell
         run: python -m pip install -r requirements.txt
 
       - name: Scrape
-        shell: bash
+        shell: powershell
         env:
           TICKETMASTER_API_KEY: ${{ secrets.TICKETMASTER_API_KEY }}
           NYC_EVENTS_API_KEY: ${{ secrets.NYC_EVENTS_API_KEY }}
         run: python run_scrape.py --dates ${{ inputs.dates }} --cities ${{ inputs.cities || 'New_York_US Mexico_City_MX' }} ${{ inputs.sites && format('--sites {0}', inputs.sites) || '' }}
 
       - name: Commit results
-        shell: bash
+        shell: powershell
         run: |
           git config user.name "scrape-bot"
           git config user.email "scrape-bot@users.noreply.github.com"
           git add result
-          git diff --cached --quiet && echo "no new data" && exit 0
-          git commit -m "scrape: $(date -u '+%Y-%m-%d %H:%M') UTC"
+          $changed = git status --porcelain
+          if (-not $changed) { Write-Host "no new data"; exit 0 }
+          git commit -m "scrape: $(Get-Date -Format 'yyyy-MM-dd HH:mm') UTC"
           git push
