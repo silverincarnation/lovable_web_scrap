@@ -49,15 +49,15 @@ def _resolve(tok, tz):
 
 def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument("--city", default="New York",
+    ap.add_argument("--city", nargs="?", const="New York", default="New York",
                     help="city name, free text (e.g. \"New York\", Guadalajara)")
-    ap.add_argument("--country", default="US",
+    ap.add_argument("--country", nargs="?", const="US", default="US",
                     help="2-letter country code (e.g. US, MX, CA)")
-    ap.add_argument("--start", default="today",
+    ap.add_argument("--start", nargs="?", const="today", default="today",
                     help="start date: YYYY-MM-DD, 'today', or 'today+N'")
-    ap.add_argument("--end", default="",
+    ap.add_argument("--end", nargs="?", const="", default="",
                     help="end date (blank = same as start); range = batch pull")
-    ap.add_argument("--tz", default="",
+    ap.add_argument("--tz", nargs="?", const="", default="",
                     help="timezone (blank = default for the country)")
     ap.add_argument("--sites", nargs="*", default=None,
                     help="subset of scrapers (default: all found in Scrap/)")
