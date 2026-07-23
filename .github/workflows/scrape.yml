@@ -1,0 +1,57 @@
+name: Scrape events
+
+on:
+  workflow_dispatch:             # manual "Run workflow" button only (no schedule)
+    inputs:
+      dates:
+        description: "Dates: YYYY-MM-DD / today / today+N (space-separated; empty = today)"
+        required: false
+        default: ""
+      cities:
+        description: "City folders (space-separated)"
+        required: false
+        default: "New_York_US Mexico_City_MX"
+      sites:
+        description: "Sources subset (empty = ALL scrapers found in Scrap/)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write                # allow the job to push the results back
+
+concurrency:
+  group: scrape                  # never two scrapes at once
+  cancel-in-progress: false
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Scrape and clean
+        env:
+          TICKETMASTER_API_KEY: ${{ secrets.TICKETMASTER_API_KEY }}
+          NYC_EVENTS_API_KEY: ${{ secrets.NYC_EVENTS_API_KEY }}
+        run: |
+          python run_scrape.py \
+            --dates ${{ inputs.dates }} \
+            --cities ${{ inputs.cities || 'New_York_US Mexico_City_MX' }} \
+            ${{ inputs.sites && format('--sites {0}', inputs.sites) || '' }}
+
+      - name: Commit results
+        run: |
+          git config user.name "scrape-bot"
+          git config user.email "scrape-bot@users.noreply.github.com"
+          git add result
+          git diff --cached --quiet && echo "no new data" && exit 0
+          git commit -m "scrape: $(date -u '+%Y-%m-%d %H:%M') UTC"
+          git push
