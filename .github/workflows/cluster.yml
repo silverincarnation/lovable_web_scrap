@@ -1,0 +1,18 @@
+# .github/workflows/cluster.yml
+name: Run event clustering
+on:
+  schedule:
+    - cron: "0 6 * * *"   # daily at 6am UTC
+  workflow_dispatch: {}     # lets you trigger manually too
+jobs:
+  cluster:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install -r lovable_clustering/requirements.txt
+      - run: python lovable_clustering/run_clustering_job.py
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
